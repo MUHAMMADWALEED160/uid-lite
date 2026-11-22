@@ -1,0 +1,317 @@
+/* =====================================================
+   University Information Display System - main styles
+   Academic theme: cream paper, deep purple, brass gold,
+   serif headings. Change the colours in the :root block.
+   ===================================================== */
+
+/* The ampersand in Playfair Display is very ornate, so "&" is drawn with a plain system font instead */
+@font-face {
+  font-family: "UidsAmp";
+  font-weight: 100 900;
+  unicode-range: U+0026;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Segoe UI Bold"), local("SegoeUI-Bold"),
+       local("Helvetica Neue Bold"), local("HelveticaNeue-Bold"), local("Roboto Bold"), local("Roboto-Bold"),
+       local("Arial"), local("Segoe UI"), local("Helvetica"), local("Roboto");
+}
+
+:root {
+  /* ----- Palette ----- */
+  --uni-primary: #4a2c7a;
+  --uni-primary-rgb: 74, 44, 122;
+  --uni-primary-hover: #35205a;
+  --uni-link: #4a2c7a;
+  --uni-link-rgb: 74, 44, 122;
+  --uni-accent: #c9a227;
+  --uni-accent-dark: #a8861a;
+
+  --uni-paper: #f7f2e7;
+  --uni-paper-2: #efe7d6;
+  --uni-card: #fffdf7;
+  --uni-ink: #241c34;
+  --uni-ink-rgb: 36, 28, 52;
+  --uni-line: #e2d8c3;
+
+  --uni-nav: #2c1a4c;
+  --uni-hero-1: #2c1a4c;
+  --uni-hero-2: #4a2c7a;
+  --uni-hero-3: #6b46a8;
+
+  --uni-radius: 0.6rem;
+  --uni-font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --uni-font-head: "UidsAmp", "Playfair Display", Georgia, "Times New Roman", serif;
+
+  /* ----- Bootstrap variables mapped to the palette ----- */
+  --bs-primary: var(--uni-primary);
+  --bs-primary-rgb: var(--uni-primary-rgb);
+  --bs-body-bg: var(--uni-paper);
+  --bs-body-bg-rgb: 247, 242, 231;
+  --bs-body-color: var(--uni-ink);
+  --bs-body-color-rgb: var(--uni-ink-rgb);
+  --bs-secondary-color: rgba(36, 28, 52, 0.68);
+  --bs-border-color: var(--uni-line);
+  --bs-link-color: var(--uni-link);
+  --bs-link-color-rgb: var(--uni-link-rgb);
+  --bs-link-hover-color: var(--uni-primary-hover);
+  --bs-link-hover-color-rgb: 53, 32, 90;
+}
+
+[data-bs-theme="dark"] {
+  --uni-primary: #8a63d2;
+  --uni-primary-rgb: 138, 99, 210;
+  --uni-primary-hover: #a07be0;
+  --uni-link: #bda5f3;
+  --uni-link-rgb: 189, 165, 243;
+
+  --uni-paper: #15111d;
+  --uni-paper-2: #221b30;
+  --uni-card: #1d1728;
+  --uni-ink: #ece6f5;
+  --uni-ink-rgb: 236, 230, 245;
+  --uni-line: #3a2f52;
+  --uni-nav: #1a0f2e;
+
+  --bs-body-bg: var(--uni-paper);
+  --bs-body-bg-rgb: 21, 17, 29;
+  --bs-body-color: var(--uni-ink);
+  --bs-body-color-rgb: var(--uni-ink-rgb);
+  --bs-secondary-color: rgba(236, 230, 245, 0.7);
+  --bs-tertiary-bg: var(--uni-paper-2);
+  --bs-border-color: var(--uni-line);
+  --bs-link-color: var(--uni-link);
+  --bs-link-color-rgb: var(--uni-link-rgb);
+  --bs-link-hover-color: #d6c8f8;
+  --bs-link-hover-color-rgb: 214, 200, 248;
+}
+
+/* ---------- Base ---------- */
+body {
+  font-family: var(--uni-font-body);
+  background: var(--uni-paper);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+main { flex: 1 0 auto; }
+
+h1, h2, h3, h4, h5, h6,
+.card-title, .section-title {
+  font-family: var(--uni-font-head);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+
+/* ---------- Buttons ---------- */
+.btn { --bs-btn-border-radius: 0.45rem; font-weight: 600; }
+
+.btn-primary {
+  --bs-btn-bg: var(--uni-primary);
+  --bs-btn-border-color: var(--uni-primary);
+  --bs-btn-hover-bg: var(--uni-primary-hover);
+  --bs-btn-hover-border-color: var(--uni-primary-hover);
+  --bs-btn-active-bg: var(--uni-primary-hover);
+  --bs-btn-active-border-color: var(--uni-primary-hover);
+  --bs-btn-disabled-bg: var(--uni-primary);
+  --bs-btn-disabled-border-color: var(--uni-primary);
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--uni-link);
+  --bs-btn-border-color: var(--uni-link);
+  --bs-btn-hover-bg: var(--uni-primary);
+  --bs-btn-hover-border-color: var(--uni-primary);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: var(--uni-primary);
+  --bs-btn-active-border-color: var(--uni-primary);
+  --bs-btn-active-color: #fff;
+  --bs-btn-disabled-color: var(--uni-link);
+  --bs-btn-disabled-border-color: var(--uni-link);
+}
+.btn-gold {
+  --bs-btn-color: #241a00;
+  --bs-btn-bg: var(--uni-accent);
+  --bs-btn-border-color: var(--uni-accent);
+  --bs-btn-hover-color: #241a00;
+  --bs-btn-hover-bg: var(--uni-accent-dark);
+  --bs-btn-hover-border-color: var(--uni-accent-dark);
+  --bs-btn-active-color: #241a00;
+  --bs-btn-active-bg: var(--uni-accent-dark);
+  --bs-btn-active-border-color: var(--uni-accent-dark);
+}
+
+/* ---------- Forms ---------- */
+.form-label { font-weight: 600; font-size: 0.92rem; }
+.form-control, .form-select { border-radius: 0.45rem; }
+[data-bs-theme="light"] .form-control,
+[data-bs-theme="light"] .form-select { background-color: #fff; }
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+  border-color: var(--uni-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--uni-primary-rgb), 0.2);
+}
+.form-check-input:checked { background-color: var(--uni-primary); border-color: var(--uni-primary); }
+
+/* ---------- Navbar ---------- */
+.site-nav {
+  background: var(--uni-nav);
+  border-bottom: 3px solid var(--uni-accent);
+  box-shadow: 0 2px 12px rgba(20, 8, 40, 0.28);
+}
+.site-nav .navbar-brand { display: flex; align-items: center; gap: 0.5rem; }
+.brand-mark { font-size: 1.4rem; }
+.brand-text {
+  font-family: var(--uni-font-head);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--uni-accent);
+}
+.site-nav .nav-link {
+  color: rgba(255, 255, 255, 0.86);
+  border-radius: 0.4rem;
+  padding-inline: 0.8rem;
+}
+.site-nav .nav-link:hover { color: var(--uni-accent); background: rgba(255, 255, 255, 0.07); }
+.theme-toggle { line-height: 1; padding: 0.35rem 0.6rem; }
+
+/* ---------- Cards ---------- */
+.card {
+  --bs-card-bg: var(--uni-card);
+  --bs-card-border-color: var(--uni-line);
+  --bs-card-border-radius: var(--uni-radius);
+  --bs-card-inner-border-radius: calc(var(--uni-radius) - 1px);
+  overflow: hidden;
+}
+/* List / dashboard cards: coloured top edge like an index tab */
+.card.h-100 {
+  border-top: 3px solid var(--uni-primary);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.card.h-100:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.8rem 1.5rem rgba(44, 26, 76, 0.16) !important;
+}
+.card.border-danger {
+  box-shadow: 0 0 0 1px var(--bs-danger), 0 0.5rem 1.2rem rgba(220, 53, 69, 0.15) !important;
+}
+.card-img-top { border-radius: 0; }
+.badge { font-weight: 600; letter-spacing: 0.02em; }
+
+/* ---------- Tables ---------- */
+.table { --bs-table-hover-bg: rgba(var(--uni-primary-rgb), 0.06); }
+.table thead th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.table-responsive {
+  border-radius: var(--uni-radius);
+  border: 1px solid var(--uni-line);
+}
+.table-responsive > .table { margin-bottom: 0; }
+.nav-pills { --bs-nav-pills-border-radius: 0.45rem; }
+.pagination { --bs-pagination-border-radius: 0.45rem; }
+
+/* ---------- Home page ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 15%, rgba(201, 162, 39, 0.32), transparent 42%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 34px),
+    linear-gradient(135deg, var(--uni-hero-1), var(--uni-hero-2) 60%, var(--uni-hero-3));
+  box-shadow: 0 1rem 2.2rem rgba(44, 26, 76, 0.3);
+}
+.hero-inner { position: relative; z-index: 1; padding: clamp(1.8rem, 5vw, 4rem); max-width: 760px; }
+.hero-kicker {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--uni-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.hero h1 {
+  font-size: clamp(1.9rem, 4.6vw, 3.2rem);
+  line-height: 1.12;
+  margin-bottom: 0.9rem;
+}
+.hero-rule { width: 72px; height: 3px; margin-bottom: 1.2rem; background: var(--uni-accent); }
+.hero .lead { color: rgba(255, 255, 255, 0.86); margin-bottom: 1.6rem; }
+.hero-search { display: flex; gap: 0.5rem; max-width: 520px; margin-bottom: 1.2rem; }
+.hero-search .form-control { border: 0; padding: 0.7rem 1rem; background-color: #fff; color: #241c34; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.hero .btn-outline-light:hover { color: var(--uni-hero-1); }
+.hero-seal {
+  position: absolute;
+  right: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(130px, 18vw, 220px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid rgba(201, 162, 39, 0.7);
+  outline: 1px solid rgba(201, 162, 39, 0.35);
+  outline-offset: 10px;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.section-title { margin-bottom: 0; }
+.section-title::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 3px;
+  margin-top: 0.4rem;
+  background: var(--uni-accent);
+}
+
+.feature-icon {
+  width: 3.2rem;
+  height: 3.2rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.8rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  background: rgba(var(--uni-primary-rgb), 0.12);
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  flex-shrink: 0;
+  margin-top: 3rem;
+  padding: 1.6rem 0;
+  color: rgba(255, 255, 255, 0.75);
+  background: var(--uni-nav);
+  border-top: 3px solid var(--uni-accent);
+  font-size: 0.92rem;
+}
+.site-footer a { color: rgba(255, 255, 255, 0.85); text-decoration: none; }
+.site-footer a:hover { color: var(--uni-accent); }
+.footer-brand { font-family: var(--uni-font-head); color: var(--uni-accent); font-weight: 700; letter-spacing: 0.08em; }
+
+/* ---------- Fixed light classes used inside some views ---------- */
+.bg-white { background-color: var(--uni-card) !important; }
+.bg-light { background-color: var(--uni-paper-2) !important; }
+.table-light {
+  --bs-table-bg: var(--uni-paper-2);
+  --bs-table-color: var(--uni-ink);
+  --bs-table-border-color: var(--uni-line);
+}
+[data-bs-theme="dark"] .card.h-100:hover { box-shadow: 0 0.8rem 1.5rem rgba(0, 0, 0, 0.5) !important; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 576px) {
+  .hero-search { flex-direction: column; }
+  .hero-actions .btn { flex: 1 1 auto; }
+  .display-6 { font-size: 1.8rem; }
+}
+@media (max-width: 767px) { .hero-seal { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .card.h-100, .card.h-100:hover { transition: none; transform: none; }
+}
