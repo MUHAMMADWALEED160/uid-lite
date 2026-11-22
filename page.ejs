@@ -1,0 +1,1701 @@
+<%#
+  ONE template for the whole website. server.js sets "pageView" (e.g. "notices/list"),
+  and only that section below is shown. Search with Ctrl+F for:  PAGE: <name>
+  Layout order:  [display page]  OR  [top navbar] + [PAGE sections] + [footer]
+%>
+<% if (pageView === "display") { %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Display Mode | University Information Display System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+/* Display Mode: full-screen dark layout for campus TVs (matches the academic theme) */
+/* The ampersand in Playfair Display is very ornate, so "&" is drawn with a plain system font instead */
+@font-face {
+  font-family: "UidsAmp";
+  font-weight: 100 900;
+  unicode-range: U+0026;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Segoe UI Bold"), local("SegoeUI-Bold"),
+       local("Helvetica Neue Bold"), local("HelveticaNeue-Bold"), local("Roboto Bold"), local("Roboto-Bold"),
+       local("Arial"), local("Segoe UI"), local("Helvetica"), local("Roboto");
+}
+
+:root {
+  --bg1: #170d2b;
+  --bg2: #35205f;
+  --text: #f4f7fb;
+  --muted: #a9b8d0;
+  --urgent: #e63946;
+  --notice: #c9a227;
+  --gold: #c9a227;
+  --found: #22c55e;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  color: var(--text);
+  font-family: "Source Sans 3", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  overflow: hidden;
+}
+body.idle { cursor: none; }
+
+/* ---- Top bar ---- */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2vh 3vw;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 2px solid rgba(201, 162, 39, 0.55);
+}
+.brand { font-family: "UidsAmp", "Playfair Display", Georgia, serif; font-size: clamp(1rem, 2.2vw, 2.4rem); font-weight: 700; letter-spacing: 0.03em; }
+.clockbox { text-align: right; line-height: 1.15; }
+#clock { font-size: clamp(1.4rem, 3.4vw, 3.8rem); font-weight: 700; font-variant-numeric: tabular-nums; }
+#date { font-size: clamp(0.8rem, 1.5vw, 1.7rem); color: var(--muted); }
+
+/* ---- Stage ---- */
+.stage { position: relative; flex: 1; min-height: 0; display: flex; }
+
+.slide {
+  flex: 1;
+  min-width: 0;
+  padding: 4vh 5vw 6vh;
+  display: flex;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.slide.show { opacity: 1; transform: none; }
+
+.loading { margin: auto; font-size: clamp(1.4rem, 3vw, 3rem); color: var(--muted); text-align: center; }
+
+.slide-inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4vw;
+  min-width: 0;
+  padding-left: 2.5vw;
+  border-left: 0.8vw solid var(--notice);
+}
+.slide-inner.kind-urgent { border-left-color: var(--urgent); }
+.slide-inner.kind-found { border-left-color: var(--found); }
+.slide-inner.kind-empty { border-left-color: var(--muted); }
+
+.slide-text { flex: 1; min-width: 0; }
+.slide-image { flex: 0 0 38%; max-height: 100%; display: flex; align-items: center; justify-content: center; }
+.slide-image img {
+  max-width: 100%;
+  max-height: 58vh;
+  border-radius: 1.2vw;
+  box-shadow: 0 1vh 4vh rgba(0, 0, 0, 0.5);
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.badges { display: flex; flex-wrap: wrap; gap: 0.8vw; margin-bottom: 2vh; }
+.badge {
+  display: inline-block;
+  padding: 0.5vh 1.2vw;
+  border-radius: 999px;
+  font-size: clamp(0.8rem, 1.5vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.14);
+}
+.badge-urgent { background: var(--urgent); animation: pulse 1.4s ease-in-out infinite; }
+.badge-notice { background: var(--notice); color: #241a00; }
+.badge-found { background: var(--found); color: #04210f; }
+
+.title {
+  font-family: "UidsAmp", "Playfair Display", Georgia, serif;
+  margin: 0 0 2vh;
+  font-size: clamp(1.8rem, 4.6vw, 5.2rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.desc {
+  margin: 0 0 3vh;
+  font-size: clamp(1.05rem, 2vw, 2.3rem);
+  line-height: 1.4;
+  color: #dbe4f3;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.facts { display: flex; flex-wrap: wrap; gap: 0.5vh 2.5vw; color: var(--muted); font-size: clamp(0.95rem, 1.6vw, 1.9rem); }
+.hint { margin-top: 2.5vh; font-size: clamp(0.9rem, 1.5vw, 1.8rem); color: var(--found); }
+
+.counter {
+  position: absolute;
+  right: 3vw;
+  bottom: 1.6vh;
+  font-size: clamp(0.8rem, 1.2vw, 1.4rem);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.progress { position: absolute; left: 0; right: 0; bottom: 0; height: 0.7vh; background: rgba(255, 255, 255, 0.08); }
+#progressBar { width: 0; height: 100%; background: linear-gradient(90deg, var(--gold), #f3d36b); }
+
+/* ---- Ticker ---- */
+.ticker {
+  display: flex;
+  align-items: stretch;
+  background: rgba(0, 0, 0, 0.45);
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  font-size: clamp(1rem, 2vw, 2.3rem);
+}
+.ticker-label {
+  flex: 0 0 auto;
+  padding: 1.4vh 2vw;
+  background: var(--gold);
+  color: #241a00;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.ticker-window { flex: 1; overflow: hidden; display: flex; align-items: center; }
+.ticker-track { display: flex; width: max-content; will-change: transform; }
+.ticker-chunk { display: flex; white-space: nowrap; }
+.ticker-item { padding: 1.4vh 3vw 1.4vh 0; }
+.ticker-item.urgent { color: #ff8a93; font-weight: 700; }
+
+/* ---- Fullscreen button ---- */
+.fs-btn {
+  position: fixed;
+  top: 1vh;
+  left: 1vw;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  font-size: 1.3rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+.fs-btn:hover { opacity: 1; }
+body.idle .fs-btn { opacity: 0; }
+
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+/* Chhoti screen (phone par test) */
+@media (max-width: 700px) {
+  .slide-inner { flex-direction: column; align-items: flex-start; gap: 2vh; }
+  .slide-image { flex: none; width: 100%; }
+}
+</style>
+</head>
+<body data-interval="<%= interval %>">
+  <header class="topbar">
+    <div class="brand">🎓 <span>University Information Display System</span></div>
+    <div class="clockbox">
+      <div id="clock">--:--:--</div>
+      <div id="date">&nbsp;</div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section id="slide" class="slide show"><div class="loading">Loading…</div></section>
+    <div class="counter" id="counter"></div>
+    <div class="progress"><div id="progressBar"></div></div>
+  </main>
+
+  <footer class="ticker">
+    <div class="ticker-label">LATEST</div>
+    <div class="ticker-window" id="tickerWindow"><div id="tickerTrack" class="ticker-track"></div></div>
+  </footer>
+
+  <button id="fsBtn" class="fs-btn" title="Fullscreen (F)">⛶</button>
+  <script>
+// Display Mode: slides auto-rotate, live clock, news ticker (vanilla JS + Fetch API)
+(function () {
+  var INTERVAL = (parseInt(document.body.getAttribute("data-interval"), 10) || 8) * 1000;
+  var REFRESH = 60 * 1000; // data is reloaded every minute
+
+  var slideEl = document.getElementById("slide");
+  var counterEl = document.getElementById("counter");
+  var barEl = document.getElementById("progressBar");
+  var trackEl = document.getElementById("tickerTrack");
+  var windowEl = document.getElementById("tickerWindow");
+  var clockEl = document.getElementById("clock");
+  var dateEl = document.getElementById("date");
+
+  var slides = [];
+  var idx = -1;
+  var timer = null;
+  var started = false;
+  var token = 0;
+
+  // Always use textContent so database text is never interpreted as HTML
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function fmtDate(iso) {
+    return iso
+      ? new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "";
+  }
+
+  // ---------- Clock ----------
+  function tick() {
+    var now = new Date();
+    clockEl.textContent = now.toLocaleTimeString("en-US", {
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    });
+    dateEl.textContent = now.toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric"
+    });
+  }
+
+  // ---------- Slides ----------
+  function buildSlides(d) {
+    var out = [];
+    (d.urgent || []).forEach(function (n) { out.push({ kind: "urgent", n: n }); });
+    (d.latest || []).forEach(function (n) { out.push({ kind: "notice", n: n }); });
+    (d.found || []).forEach(function (n) { out.push({ kind: "found", n: n }); });
+    if (!out.length) out.push({ kind: "empty" });
+    return out;
+  }
+
+  function slideContent(s) {
+    var wrap = el("div", "slide-inner kind-" + s.kind);
+    var text = el("div", "slide-text");
+
+    if (s.kind === "empty") {
+      text.appendChild(el("div", "badges")).appendChild(el("span", "badge badge-notice", "WELCOME"));
+      text.appendChild(el("h1", "title", "Welcome to the University"));
+      text.appendChild(el("p", "desc", "There are no announcements or found items right now."));
+      wrap.appendChild(text);
+      return wrap;
+    }
+
+    var n = s.n;
+    var badges = el("div", "badges");
+    if (s.kind === "urgent") badges.appendChild(el("span", "badge badge-urgent", "URGENT"));
+    else if (s.kind === "found") badges.appendChild(el("span", "badge badge-found", "FOUND ITEM"));
+    else badges.appendChild(el("span", "badge badge-notice", "ANNOUNCEMENT"));
+    if (n.category) badges.appendChild(el("span", "badge", n.category));
+    if (s.kind !== "found" && n.department && n.department !== "All") {
+      badges.appendChild(el("span", "badge", n.department));
+    }
+    text.appendChild(badges);
+
+    text.appendChild(el("h1", "title", n.title));
+    if (n.description) text.appendChild(el("p", "desc", n.description));
+
+    var facts = el("div", "facts");
+    if (s.kind === "found") {
+      if (n.location) facts.appendChild(el("div", "", "📍 " + n.location));
+      if (n.date) facts.appendChild(el("div", "", "📅 Found on " + fmtDate(n.date)));
+      text.appendChild(facts);
+      text.appendChild(el("p", "hint", "Is this yours? Log in to the website and submit a claim."));
+    } else {
+      facts.appendChild(el("div", "", "📅 Posted " + fmtDate(n.publishDate)));
+      if (n.expiryDate) facts.appendChild(el("div", "", "⏳ Until " + fmtDate(n.expiryDate)));
+      text.appendChild(facts);
+    }
+    wrap.appendChild(text);
+
+    if (n.image) {
+      var box = el("div", "slide-image");
+      var img = document.createElement("img");
+      img.src = n.image;
+      img.alt = "";
+      box.appendChild(img);
+      wrap.appendChild(box);
+    }
+    return wrap;
+  }
+
+  function restartProgress() {
+    barEl.style.transition = "none";
+    barEl.style.width = "0";
+    void barEl.offsetWidth; // reflow
+    barEl.style.transition = "width " + INTERVAL + "ms linear";
+    barEl.style.width = "100%";
+  }
+
+  function show(i) {
+    if (!slides.length) return;
+    idx = (i + slides.length) % slides.length;
+    var s = slides[idx];
+    var my = ++token;
+
+    slideEl.classList.remove("show");
+    setTimeout(function () {
+      if (my !== token) return; // a newer slide has taken over
+      while (slideEl.firstChild) slideEl.removeChild(slideEl.firstChild);
+      slideEl.appendChild(slideContent(s));
+      slideEl.classList.add("show");
+    }, 350);
+
+    counterEl.textContent = idx + 1 + " / " + slides.length;
+    restartProgress();
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(function () { show(idx + 1); }, INTERVAL);
+  }
+
+  function go(step) {
+    show(idx + step);
+    startTimer();
+  }
+
+  // ---------- Ticker ----------
+  function renderTicker(items) {
+    while (trackEl.firstChild) trackEl.removeChild(trackEl.firstChild);
+    var list = items.length ? items : [{ title: "No active announcements", urgent: false }];
+
+    function fill(chunk) {
+      list.forEach(function (t) {
+        chunk.appendChild(el("span", "ticker-item" + (t.urgent ? " urgent" : ""), (t.urgent ? "🔴 " : "• ") + t.title));
+      });
+    }
+
+    var first = el("div", "ticker-chunk");
+    fill(first);
+    trackEl.appendChild(first);
+    // If the chunk is narrower than the screen, repeat it so there is no gap
+    var guard = 0;
+    while (first.offsetWidth < windowEl.offsetWidth && guard++ < 10) fill(first);
+
+    trackEl.appendChild(first.cloneNode(true)); // duplicate for a seamless loop
+    var seconds = Math.max(first.offsetWidth / 90, 15); // ~90 px/second
+    trackEl.style.animation = "none";
+    void trackEl.offsetWidth;
+    trackEl.style.animation = "ticker " + seconds + "s linear infinite";
+  }
+
+  // ---------- Data ----------
+  function load() {
+    return fetch("/display/data", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (d) {
+        slides = buildSlides(d);
+        renderTicker(d.ticker || []);
+        if (!started) {
+          started = true;
+          show(0);
+          startTimer();
+        } else if (idx >= slides.length) {
+          show(0);
+        }
+      });
+  }
+
+  function loadFirst() {
+    load().catch(function () {
+      if (started) return;
+      while (slideEl.firstChild) slideEl.removeChild(slideEl.firstChild);
+      slideEl.appendChild(el("div", "loading", "Cannot connect to the server. Retrying…"));
+      setTimeout(loadFirst, 10000);
+    });
+  }
+
+  // ---------- Fullscreen, keyboard, idle cursor ----------
+  function toggleFullscreen() {
+    var d = document, e = d.documentElement;
+    if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+      (e.requestFullscreen || e.webkitRequestFullscreen || function () {}).call(e);
+    } else {
+      (d.exitFullscreen || d.webkitExitFullscreen || function () {}).call(d);
+    }
+  }
+  document.getElementById("fsBtn").addEventListener("click", toggleFullscreen);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "f" || e.key === "F") toggleFullscreen();
+    else if (e.key === "ArrowRight") go(1);
+    else if (e.key === "ArrowLeft") go(-1);
+  });
+
+  var idleTimer;
+  function wake() {
+    document.body.classList.remove("idle");
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () { document.body.classList.add("idle"); }, 3000);
+  }
+  document.addEventListener("mousemove", wake);
+  wake();
+
+  // ---------- Start ----------
+  tick();
+  setInterval(tick, 1000);
+  loadFirst();
+  setInterval(function () { load().catch(function () {}); }, REFRESH);
+})();
+</script>
+</body>
+</html>
+<% } else { %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> | University Information Display System</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+  <script>
+    // Apply the saved theme before the page paints (prevents a flash)
+    (function () {
+      try {
+        var t = localStorage.getItem("theme");
+        if (!t) t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-bs-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top site-nav">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <span class="brand-mark">📚</span><span class="brand-text">UIDS</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <div class="navbar-nav ms-auto align-items-lg-center">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/notices">Notices</a>
+        <a class="nav-link" href="/items">Lost &amp; Found</a>
+        <a class="nav-link" href="/display" target="_blank">Display</a>
+        <% if (currentUser) { %>
+          <a class="nav-link" href="/items/mine">My Reports</a>
+          <% if (currentUser.role === "admin") { %>
+            <a class="nav-link" href="/admin">Dashboard</a>
+          <% } %>
+          <span class="nav-link disabled text-white-50">Hi, <%= currentUser.name %></span>
+          <a class="nav-link" href="/logout">Logout</a>
+        <% } else { %>
+          <a class="nav-link" href="/login">Login</a>
+          <a class="btn btn-gold btn-sm ms-lg-2 my-1 my-lg-0" href="/signup">Sign up</a>
+        <% } %>
+        <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm theme-toggle ms-lg-2 my-1 my-lg-0" aria-label="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+  </div>
+</nav>
+<main class="container py-4">
+<% if (typeof flash !== "undefined" && flash) { %>
+  <div class="alert alert-<%= flash.type %> alert-dismissible fade show" role="alert">
+    <%= flash.text %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+
+<%# ============ PAGE: index ============ %>
+<% if (pageView === "index") { %>
+<section class="hero mb-5">
+  <div class="hero-seal" aria-hidden="true">🎓</div>
+  <div class="hero-inner">
+    <span class="hero-kicker">Campus Information Hub</span>
+    <h1>University Information Display System</h1>
+    <div class="hero-rule"></div>
+    <p class="lead">Notices, announcements and lost &amp; found items, all in one place.</p>
+
+    <form method="GET" action="/notices" class="hero-search">
+      <input type="text" name="q" class="form-control" placeholder="Search notices...">
+      <button class="btn btn-gold px-4">Search</button>
+    </form>
+
+    <div class="hero-actions">
+      <a class="btn btn-light" href="/notices">View Notices</a>
+      <a class="btn btn-outline-light" href="/items">Lost &amp; Found</a>
+      <a class="btn btn-outline-light" href="/display" target="_blank">📺 Display Mode</a>
+    </div>
+  </div>
+</section>
+
+<div class="d-flex justify-content-between align-items-end mb-3">
+  <h3 class="section-title">Latest Notices</h3>
+  <a href="/notices">View all &rarr;</a>
+</div>
+
+<% if (notices.length === 0) { %>
+  <div class="alert alert-secondary">There are no active notices right now.</div>
+<% } %>
+<div class="row g-3 mb-5">
+  <% notices.forEach(function(n){ %>
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm <%= n.isPinned ? "border-danger" : "" %>">
+        <div class="card-body d-flex flex-column">
+          <div class="mb-2">
+            <% if (n.isPinned) { %><span class="badge bg-danger">Urgent</span><% } %>
+            <span class="badge bg-primary"><%= n.category ? n.category.name : "Uncategorized" %></span>
+            <span class="badge bg-secondary"><%= n.department %></span>
+          </div>
+          <h5 class="card-title"><%= n.title %></h5>
+          <p class="card-text text-muted flex-grow-1">
+            <%= n.description.length > 100 ? n.description.slice(0, 100) + "..." : n.description %>
+          </p>
+          <div class="small text-muted mb-2">Posted: <%= fmtDate(n.publishDate) %></div>
+          <a href="/notices/<%= n._id %>" class="btn btn-outline-primary btn-sm">Read more</a>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<div class="d-flex justify-content-between align-items-end mb-3">
+  <h3 class="section-title">Recently Found</h3>
+  <a href="/items?type=found">View all &rarr;</a>
+</div>
+
+<% if (found.length === 0) { %>
+  <div class="alert alert-secondary">There are no found items right now.</div>
+<% } %>
+<div class="row g-3 mb-5">
+  <% found.forEach(function(it){ %>
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <% if (it.image && it.image.filename) { %>
+          <img src="/uploads/<%= it.image.filename %>" class="card-img-top" style="height:170px;object-fit:cover;" alt="<%= it.title %>">
+        <% } else { %>
+          <div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height:170px;font-size:3rem;">📦</div>
+        <% } %>
+        <div class="card-body d-flex flex-column">
+          <div class="mb-2">
+            <span class="badge bg-success">FOUND</span>
+            <span class="badge bg-primary"><%= it.category ? it.category.name : "Other" %></span>
+          </div>
+          <h5 class="card-title"><%= it.title %></h5>
+          <p class="small text-muted flex-grow-1 mb-2">📍 <%= it.location %> &middot; 📅 <%= fmtDate(it.date) %></p>
+          <a href="/items/<%= it._id %>" class="btn btn-outline-primary btn-sm">View details</a>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<h3 class="section-title mb-4">What you can do here</h3>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm"><div class="card-body">
+      <div class="feature-icon">📢</div>
+      <h5>Announcements</h5>
+      <p class="text-muted mb-0">Browse exam, event, admission and scholarship notices, and filter them by category and department.</p>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm"><div class="card-body">
+      <div class="feature-icon">🔎</div>
+      <h5>Lost &amp; Found</h5>
+      <p class="text-muted mb-0">Lost something or found something? Report it, and claim your belongings.</p>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm"><div class="card-body">
+      <div class="feature-icon">📺</div>
+      <h5>Display Mode</h5>
+      <p class="text-muted mb-0">A full-screen board for campus TVs showing urgent notices, the latest announcements and found items.</p>
+    </div></div>
+  </div>
+</div>
+<% } %>
+
+<%# ============ PAGE: error ============ %>
+<% if (pageView === "error") { %>
+<div class="text-center py-5">
+  <h1 class="display-4"><%= code %></h1>
+  <p class="lead"><%= message %></p>
+  <a href="/" class="btn btn-primary">Home</a>
+</div>
+<% } %>
+
+<%# ============ PAGE: auth/login ============ %>
+<% if (pageView === "auth/login") { %>
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="mb-3">Login</h3>
+        <% if (typeof error !== "undefined" && error) { %>
+          <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <form method="POST" action="/login">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" value="<%= old.email || "" %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button class="btn btn-primary w-100">Login</button>
+        </form>
+        <p class="mt-3 mb-0 text-center">Don't have an account? <a href="/signup">Sign up</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<%# ============ PAGE: auth/signup ============ %>
+<% if (pageView === "auth/signup") { %>
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="mb-3">Sign up</h3>
+        <% if (typeof error !== "undefined" && error) { %>
+          <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <form method="POST" action="/signup">
+          <div class="mb-3">
+            <label class="form-label">Full name</label>
+            <input type="text" name="name" class="form-control" value="<%= old.name || "" %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" value="<%= old.email || "" %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Department</label>
+            <select name="department" class="form-select">
+              <% ["CS","EE","BBA","Other"].forEach(function(d){ %>
+                <option value="<%= d %>" <%= old.department === d ? "selected" : "" %>><%= d %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Password</label>
+              <input type="password" name="password" class="form-control" minlength="6" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Confirm password</label>
+              <input type="password" name="confirmPassword" class="form-control" minlength="6" required>
+            </div>
+          </div>
+          <button class="btn btn-primary w-100">Create account</button>
+        </form>
+        <p class="mt-3 mb-0 text-center">Already have an account? <a href="/login">Login</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<%# ============ PAGE: notices/list ============ %>
+<% if (pageView === "notices/list") { %>
+<h2 class="mb-3">Notices</h2>
+
+<form method="GET" action="/notices" class="card card-body shadow-sm mb-4">
+  <div class="row g-2">
+    <div class="col-12 col-md-6">
+      <input type="text" name="q" class="form-control" placeholder="Search title or description..." value="<%= f.q %>">
+    </div>
+    <div class="col-6 col-md-3">
+      <select name="category" class="form-select">
+        <option value="">All categories</option>
+        <% categories.forEach(function(c){ %>
+          <option value="<%= c._id %>" <%= String(c._id) === f.category ? "selected" : "" %>><%= c.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <select name="department" class="form-select">
+        <option value="">All departments</option>
+        <% departments.forEach(function(d){ %>
+          <option value="<%= d %>" <%= d === f.department ? "selected" : "" %>><%= d %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-0 text-muted">From</label>
+      <input type="date" name="from" class="form-control" value="<%= f.from %>">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-0 text-muted">To</label>
+      <input type="date" name="to" class="form-control" value="<%= f.to %>">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-0 text-muted">Sort by</label>
+      <select name="sort" class="form-select">
+        <option value="urgent" <%= f.sort === "urgent" ? "selected" : "" %>>Urgent first</option>
+        <option value="newest" <%= f.sort === "newest" ? "selected" : "" %>>Newest</option>
+        <option value="oldest" <%= f.sort === "oldest" ? "selected" : "" %>>Oldest</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 d-flex align-items-end gap-2">
+      <button class="btn btn-primary flex-grow-1">Search</button>
+      <% if (filtered) { %><a href="/notices" class="btn btn-outline-secondary">Reset</a><% } %>
+    </div>
+  </div>
+</form>
+
+<p class="text-muted small"><%= total %> notice(s) found<%= filtered ? " (filtered)" : "" %></p>
+
+<% if (notices.length === 0) { %>
+  <div class="alert alert-secondary">
+    <%= filtered ? "No notices match these filters." : "There are no active notices right now." %>
+  </div>
+<% } %>
+
+<div class="row g-3">
+  <% notices.forEach(function(n){ %>
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm <%= n.isPinned ? "border-danger" : "" %>">
+        <div class="card-body d-flex flex-column">
+          <div class="mb-2">
+            <% if (n.isPinned) { %><span class="badge bg-danger">Urgent</span><% } %>
+            <span class="badge bg-primary"><%= n.category ? n.category.name : "Uncategorized" %></span>
+            <span class="badge bg-secondary"><%= n.department %></span>
+          </div>
+          <h5 class="card-title"><%= n.title %></h5>
+          <p class="card-text text-muted flex-grow-1">
+            <%= n.description.length > 110 ? n.description.slice(0, 110) + "..." : n.description %>
+          </p>
+          <div class="small text-muted mb-2">
+            Posted: <%= fmtDate(n.publishDate) %>
+            <% if (n.expiryDate) { %> &middot; Expires: <%= fmtDate(n.expiryDate) %><% } %>
+            <% if (n.attachment && n.attachment.filename) { %> &middot; 📎<% } %>
+          </div>
+          <a href="/notices/<%= n._id %>" class="btn btn-outline-primary btn-sm">Read more</a>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<% if (totalPages > 1) { %>
+  <% var qs = baseQS ? baseQS + "&" : ""; %>
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item <%= page <= 1 ? "disabled" : "" %>">
+        <a class="page-link" href="/notices?<%= qs %>page=<%= page - 1 %>">Previous</a>
+      </li>
+      <li class="page-item disabled"><span class="page-link">Page <%= page %> of <%= totalPages %></span></li>
+      <li class="page-item <%= page >= totalPages ? "disabled" : "" %>">
+        <a class="page-link" href="/notices?<%= qs %>page=<%= page + 1 %>">Next</a>
+      </li>
+    </ul>
+  </nav>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: notices/detail ============ %>
+<% if (pageView === "notices/detail") { %>
+<a href="/notices" class="btn btn-link px-0">&larr; Back to notices</a>
+
+<% if (!isActive) { %>
+  <div class="alert alert-warning">This notice is not public right now (expired or scheduled). Only admins can see it.</div>
+<% } %>
+
+<div class="card shadow-sm">
+  <div class="card-body p-4">
+    <div class="mb-2">
+      <% if (notice.isPinned) { %><span class="badge bg-danger">Urgent</span><% } %>
+      <span class="badge bg-primary"><%= notice.category ? notice.category.name : "Uncategorized" %></span>
+      <span class="badge bg-secondary"><%= notice.department %></span>
+    </div>
+    <h2><%= notice.title %></h2>
+    <p class="text-muted small">
+      Posted: <%= fmtDate(notice.publishDate) %>
+      <% if (notice.expiryDate) { %> &middot; Expires: <%= fmtDate(notice.expiryDate) %><% } %>
+      <% if (notice.createdBy) { %> &middot; By <%= notice.createdBy.name %><% } %>
+    </p>
+    <hr>
+    <p style="white-space: pre-line;"><%= notice.description %></p>
+
+    <% if (notice.attachment && notice.attachment.filename) { %>
+      <hr>
+      <h6>Attachment</h6>
+      <% if ((notice.attachment.mimetype || "").startsWith("image/")) { %>
+        <img src="/uploads/<%= notice.attachment.filename %>" class="img-fluid rounded mb-2" alt="Attachment">
+        <br>
+      <% } %>
+      <a class="btn btn-outline-primary btn-sm" href="/uploads/<%= notice.attachment.filename %>" target="_blank">
+        📎 <%= notice.attachment.originalName || "Open file" %>
+      </a>
+    <% } %>
+  </div>
+</div>
+<% } %>
+
+<%# ============ PAGE: items/list ============ %>
+<% if (pageView === "items/list") { %>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h2 class="mb-0">Lost &amp; Found</h2>
+  <div class="d-flex gap-2">
+    <a href="/items/new?type=lost" class="btn btn-danger btn-sm">+ Report Lost</a>
+    <a href="/items/new?type=found" class="btn btn-success btn-sm">+ Report Found</a>
+  </div>
+</div>
+
+<form method="GET" action="/items" class="card card-body shadow-sm mb-4">
+  <div class="row g-2">
+    <div class="col-12 col-md-6">
+      <input type="text" name="q" class="form-control" placeholder="Search title, description or location..." value="<%= f.q %>">
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="type" class="form-select">
+        <option value="">Lost + Found</option>
+        <option value="lost" <%= f.type === "lost" ? "selected" : "" %>>Lost</option>
+        <option value="found" <%= f.type === "found" ? "selected" : "" %>>Found</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="category" class="form-select">
+        <option value="">All categories</option>
+        <% categories.forEach(function(c){ %>
+          <option value="<%= c._id %>" <%= String(c._id) === f.category ? "selected" : "" %>><%= c.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select name="status" class="form-select">
+        <option value="">Any status</option>
+        <% statuses.forEach(function(s){ %>
+          <option value="<%= s %>" <%= s === f.status ? "selected" : "" %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-0 text-muted">From</label>
+      <input type="date" name="from" class="form-control" value="<%= f.from %>">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-0 text-muted">To</label>
+      <input type="date" name="to" class="form-control" value="<%= f.to %>">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small mb-0 text-muted">Sort by</label>
+      <select name="sort" class="form-select">
+        <option value="newest" <%= f.sort === "newest" ? "selected" : "" %>>Newest</option>
+        <option value="oldest" <%= f.sort === "oldest" ? "selected" : "" %>>Oldest</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 d-flex align-items-end gap-2">
+      <button class="btn btn-primary flex-grow-1">Search</button>
+      <% if (filtered) { %><a href="/items" class="btn btn-outline-secondary">Reset</a><% } %>
+    </div>
+  </div>
+</form>
+
+<p class="text-muted small"><%= total %> item(s) found<%= filtered ? " (filtered)" : "" %></p>
+
+<% if (items.length === 0) { %>
+  <div class="alert alert-secondary">
+    <%= filtered ? "No items match these filters." : "There are no items yet." %>
+  </div>
+<% } %>
+
+<div class="row g-3">
+  <% items.forEach(function(it){ %>
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <% if (it.image && it.image.filename) { %>
+          <img src="/uploads/<%= it.image.filename %>" class="card-img-top" style="height:180px;object-fit:cover;" alt="<%= it.title %>">
+        <% } else { %>
+          <div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height:180px;font-size:3rem;">📦</div>
+        <% } %>
+        <div class="card-body d-flex flex-column">
+          <div class="mb-2">
+            <span class="badge bg-<%= it.type === "lost" ? "danger" : "success" %> text-uppercase"><%= it.type %></span>
+            <span class="badge bg-<%= statusClass(it.status) %> text-capitalize"><%= it.status %></span>
+            <span class="badge bg-primary"><%= it.category ? it.category.name : "Other" %></span>
+          </div>
+          <h5 class="card-title"><%= it.title %></h5>
+          <p class="small text-muted mb-1">📍 <%= it.location %></p>
+          <p class="small text-muted flex-grow-1">📅 <%= fmtDate(it.date) %></p>
+          <a href="/items/<%= it._id %>" class="btn btn-outline-primary btn-sm">View details</a>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<% if (totalPages > 1) { %>
+  <% var qs = baseQS ? baseQS + "&" : ""; %>
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item <%= page <= 1 ? "disabled" : "" %>">
+        <a class="page-link" href="/items?<%= qs %>page=<%= page - 1 %>">Previous</a>
+      </li>
+      <li class="page-item disabled"><span class="page-link">Page <%= page %> of <%= totalPages %></span></li>
+      <li class="page-item <%= page >= totalPages ? "disabled" : "" %>">
+        <a class="page-link" href="/items?<%= qs %>page=<%= page + 1 %>">Next</a>
+      </li>
+    </ul>
+  </nav>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: items/form ============ %>
+<% if (pageView === "items/form") { %>
+<%
+  var ov = function(f) { return old && old[f] !== undefined ? old[f] : ""; };
+  var dateVal = old && old.date ? old.date : inputDate(new Date());
+%>
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="mb-1"><%= type === "found" ? "Report Found Item" : "Report Lost Item" %></h3>
+        <p class="text-muted small">
+          Your report will be reviewed by an admin and then made public.
+          <% if (type === "lost") { %>
+            <a href="/items/new?type=found">Found something? Report a found item.</a>
+          <% } else { %>
+            <a href="/items/new?type=lost">Lost something? Report a lost item.</a>
+          <% } %>
+        </p>
+
+        <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+        <% if (categories.length === 0) { %>
+          <div class="alert alert-warning">
+            There are no item categories yet. Ask an admin, or run <code>node seed.js</code> in the terminal.
+          </div>
+        <% } %>
+
+        <form method="POST" action="/items" enctype="multipart/form-data">
+          <input type="hidden" name="type" value="<%= type %>">
+
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" class="form-control" placeholder="e.g. Black wallet" value="<%= ov("title") %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" rows="4" class="form-control" required
+              placeholder="Colour, brand, distinguishing marks, what was inside..."><%= ov("description") %></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select" required>
+                <option value="">-- select --</option>
+                <% categories.forEach(function(c){ %>
+                  <option value="<%= c._id %>" <%= String(c._id) === ov("category") ? "selected" : "" %>><%= c.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Date <%= type === "found" ? "found" : "lost" %></label>
+              <input type="date" name="date" class="form-control" value="<%= dateVal %>" max="<%= inputDate(new Date()) %>" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Location</label>
+            <input type="text" name="location" class="form-control" placeholder="e.g. Library, Block B" value="<%= ov("location") %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contact info</label>
+            <input type="text" name="contactInfo" class="form-control" placeholder="Phone number or email" value="<%= ov("contactInfo") %>" required>
+            <div class="form-text">Only logged-in users and admins can see this.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Photo (optional, max 5 MB)</label>
+            <input type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+          </div>
+          <button class="btn btn-primary" <%= categories.length === 0 ? "disabled" : "" %>>Submit report</button>
+          <a href="/items" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<%# ============ PAGE: items/detail ============ %>
+<% if (pageView === "items/detail") { %>
+<a href="/items" class="btn btn-link px-0">&larr; Back to Lost &amp; Found</a>
+
+<% if (item.approval === "pending") { %>
+  <div class="alert alert-warning">This report is awaiting admin approval. Only you (and admins) can see it.</div>
+<% } else if (item.approval === "rejected") { %>
+  <div class="alert alert-danger">This report was rejected.</div>
+<% } %>
+
+<div class="card shadow-sm">
+  <div class="row g-0">
+    <% if (item.image && item.image.filename) { %>
+      <div class="col-md-5">
+        <img src="/uploads/<%= item.image.filename %>" class="img-fluid rounded-start w-100" style="max-height:420px;object-fit:cover;" alt="<%= item.title %>">
+      </div>
+    <% } %>
+    <div class="<%= item.image && item.image.filename ? "col-md-7" : "col-12" %>">
+      <div class="card-body p-4">
+        <div class="mb-2">
+          <span class="badge bg-<%= item.type === "lost" ? "danger" : "success" %> text-uppercase"><%= item.type %></span>
+          <span class="badge bg-<%= statusClass(item.status) %> text-capitalize"><%= item.status %></span>
+          <span class="badge bg-primary"><%= item.category ? item.category.name : "Other" %></span>
+        </div>
+        <h2><%= item.title %></h2>
+        <p style="white-space: pre-line;"><%= item.description %></p>
+        <ul class="list-unstyled text-muted">
+          <li>📍 <strong>Location:</strong> <%= item.location %></li>
+          <li>📅 <strong>Date:</strong> <%= fmtDate(item.date) %></li>
+          <li>👤 <strong>Posted by:</strong> <%= item.postedBy ? item.postedBy.name : "-" %><%= item.postedBy && item.postedBy.department ? " (" + item.postedBy.department + ")" : "" %></li>
+        </ul>
+
+        <% if (canSeeContact) { %>
+          <div class="alert alert-info py-2">📞 <strong>Contact:</strong> <%= item.contactInfo %></div>
+        <% } else if (!currentUser) { %>
+          <div class="alert alert-secondary py-2"><a href="/login">Log in</a> to see the contact info.</div>
+        <% } else if (item.type === "found") { %>
+          <div class="alert alert-secondary py-2">The contact info for a found item is shown after your claim is approved.</div>
+        <% } %>
+
+        <% if (myClaim) { %>
+          <div class="alert alert-<%= myClaim.status === "approved" ? "success" : myClaim.status === "rejected" ? "danger" : "warning" %>">
+            Your claim: <strong class="text-capitalize"><%= myClaim.status %></strong>
+          </div>
+        <% } %>
+
+        <% if (isOwner || isAdmin) { %>
+          <form method="POST" action="/items/<%= item._id %>/delete" class="d-inline"
+                onsubmit="return confirm(&#39;Delete this item?&#39;);">
+            <button class="btn btn-outline-danger btn-sm">Delete</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (canClaim) { %>
+  <div class="card shadow-sm mt-4">
+    <div class="card-body p-4">
+      <h5>This is mine</h5>
+      <p class="text-muted small">Describe your proof of ownership so an admin can verify it: marks, colour, contents, when and where you lost it.</p>
+      <form method="POST" action="/items/<%= item._id %>/claim">
+        <textarea name="message" rows="3" class="form-control mb-3" minlength="10" required></textarea>
+        <button class="btn btn-success">Send claim request</button>
+      </form>
+    </div>
+  </div>
+<% } else if (!currentUser && item.type === "found" && item.status === "found" && item.approval === "approved") { %>
+  <div class="alert alert-secondary mt-4">Is this your item? <a href="/login">Log in</a> to submit a claim.</div>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: items/mine ============ %>
+<% if (pageView === "items/mine") { %>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">My Reports</h2>
+  <div class="d-flex gap-2">
+    <a href="/items/new?type=lost" class="btn btn-danger btn-sm">+ Report Lost</a>
+    <a href="/items/new?type=found" class="btn btn-success btn-sm">+ Report Found</a>
+  </div>
+</div>
+
+<% if (items.length === 0) { %>
+  <div class="alert alert-secondary">You have not submitted any reports yet.</div>
+<% } else { %>
+<div class="table-responsive mb-5">
+  <table class="table align-middle bg-white">
+    <thead class="table-light"><tr><th>Title</th><th>Type</th><th>Status</th><th>Approval</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      <% items.forEach(function(it){ %>
+        <tr>
+          <td><a href="/items/<%= it._id %>"><%= it.title %></a></td>
+          <td><span class="badge bg-<%= it.type === "lost" ? "danger" : "success" %> text-uppercase"><%= it.type %></span></td>
+          <td><span class="badge bg-<%= statusClass(it.status) %> text-capitalize"><%= it.status %></span></td>
+          <td>
+            <span class="badge bg-<%= it.approval === "approved" ? "success" : it.approval === "rejected" ? "danger" : "warning text-dark" %> text-capitalize"><%= it.approval %></span>
+          </td>
+          <td><%= fmtDate(it.date) %></td>
+          <td class="text-end">
+            <form method="POST" action="/items/<%= it._id %>/delete" class="d-inline"
+                  onsubmit="return confirm(&#39;Delete this item?&#39;);">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
+<h4 class="mb-3">My Claims</h4>
+<% if (claims.length === 0) { %>
+  <div class="alert alert-secondary">You have not submitted any claims yet.</div>
+<% } else { %>
+<div class="table-responsive">
+  <table class="table align-middle bg-white">
+    <thead class="table-light"><tr><th>Item</th><th>Your message</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+      <% claims.forEach(function(c){ %>
+        <tr>
+          <td>
+            <% if (c.item) { %><a href="/items/<%= c.item._id %>"><%= c.item.title %></a><% } else { %>(deleted)<% } %>
+          </td>
+          <td><%= c.message %></td>
+          <td><span class="badge bg-<%= c.status === "approved" ? "success" : c.status === "rejected" ? "danger" : "warning text-dark" %> text-capitalize"><%= c.status %></span></td>
+          <td><%= fmtDate(c.createdAt) %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: admin/dashboard ============ %>
+<% if (pageView === "admin/dashboard") { %>
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<% if (stats.pendingItems > 0 || stats.pendingClaims > 0) { %>
+  <div class="alert alert-warning">
+    <strong>Action needed:</strong>
+    <% if (stats.pendingItems > 0) { %>
+      <a href="/admin/items?approval=pending"><%= stats.pendingItems %> report(s) awaiting approval</a>
+    <% } %>
+    <% if (stats.pendingItems > 0 && stats.pendingClaims > 0) { %> &middot; <% } %>
+    <% if (stats.pendingClaims > 0) { %>
+      <a href="/admin/claims?status=pending"><%= stats.pendingClaims %> claim request(s)</a>
+    <% } %>
+  </div>
+<% } %>
+
+<div class="row g-3 mb-4">
+  <%
+    var cards = [
+      ["Total notices", stats.totalNotices, "primary"],
+      ["Active notices", stats.activeNotices, "success"],
+      ["Lost items", stats.lostItems, "danger"],
+      ["Found items", stats.foundItems, "success"],
+      ["Claimed items", stats.claimedItems, "warning"],
+      ["Users", stats.totalUsers, "secondary"]
+    ];
+  %>
+  <% cards.forEach(function(c){ %>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card text-center shadow-sm h-100 border-<%= c[2] %>"><div class="card-body">
+        <div class="display-6"><%= c[1] %></div><div class="text-muted small"><%= c[0] %></div>
+      </div></div>
+    </div>
+  <% }) %>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100"><div class="card-body">
+      <h6 class="mb-3">Notices per category</h6>
+      <div id="categoryChartBox" style="position:relative;height:300px;">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100"><div class="card-body">
+      <h6 class="mb-3">Lost vs Found reports per month</h6>
+      <div id="monthlyChartBox" style="position:relative;height:300px;">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="d-flex gap-2 flex-wrap">
+  <a href="/admin/notices/new" class="btn btn-primary">+ New Notice</a>
+  <a href="/admin/notices" class="btn btn-outline-primary">Notices</a>
+  <a href="/admin/categories" class="btn btn-outline-primary">Categories</a>
+  <a href="/admin/items" class="btn btn-outline-primary">Lost &amp; Found</a>
+  <a href="/admin/claims" class="btn btn-outline-primary">Claim Requests</a>
+  <a href="/admin/users" class="btn btn-outline-primary">Users</a>
+  <a href="/display" target="_blank" class="btn btn-outline-success">📺 Display Mode</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+// Dashboard charts: fetches data from /admin/api/stats and draws it with Chart.js
+(function () {
+  function showMessage(id, text) {
+    var box = document.getElementById(id);
+    if (box) box.innerHTML = '<div class="text-muted text-center py-5">' + text + "</div>";
+  }
+
+  function drawCategoryChart(rows) {
+    if (!rows.length) return showMessage("categoryChartBox", "No notices yet.");
+    new Chart(document.getElementById("categoryChart"), {
+      type: "bar",
+      data: {
+        labels: rows.map(function (r) { return r.name; }),
+        datasets: [{
+          label: "Notices",
+          data: rows.map(function (r) { return r.count; }),
+          backgroundColor: "#0d6efd"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  function drawMonthlyChart(m) {
+    var total = m.lost.concat(m.found).reduce(function (a, b) { return a + b; }, 0);
+    if (!total) return showMessage("monthlyChartBox", "No approved reports in the last 6 months.");
+    new Chart(document.getElementById("monthlyChart"), {
+      type: "bar",
+      data: {
+        labels: m.labels,
+        datasets: [
+          { label: "Lost", data: m.lost, backgroundColor: "#dc3545" },
+          { label: "Found", data: m.found, backgroundColor: "#198754" }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  fetch("/admin/api/stats", { headers: { Accept: "application/json" } })
+    .then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(function (data) {
+      drawCategoryChart(data.noticesPerCategory);
+      drawMonthlyChart(data.itemsPerMonth);
+    })
+    .catch(function () {
+      showMessage("categoryChartBox", "Could not load the chart.");
+      showMessage("monthlyChartBox", "Could not load the chart.");
+    });
+})();
+</script>
+<% } %>
+
+<%# ============ PAGE: admin/notices ============ %>
+<% if (pageView === "admin/notices") { %>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Manage Notices</h2>
+  <a href="/admin/notices/new" class="btn btn-primary">+ New Notice</a>
+</div>
+
+<% if (notices.length === 0) { %>
+  <div class="alert alert-secondary">No notices yet.</div>
+<% } else { %>
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-white">
+    <thead class="table-light">
+      <tr><th>Title</th><th>Category</th><th>Dept</th><th>Publish</th><th>Expiry</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% notices.forEach(function(n){
+           var expired = n.expiryDate && n.expiryDate <= now;
+           var scheduled = n.publishDate > now; %>
+        <tr>
+          <td>
+            <%= n.title %>
+            <% if (n.isPinned) { %><span class="badge bg-danger">Urgent</span><% } %>
+            <% if (n.attachment && n.attachment.filename) { %>📎<% } %>
+          </td>
+          <td><%= n.category ? n.category.name : "-" %></td>
+          <td><%= n.department %></td>
+          <td><%= fmtDate(n.publishDate) %></td>
+          <td><%= n.expiryDate ? fmtDate(n.expiryDate) : "-" %></td>
+          <td>
+            <% if (expired) { %><span class="badge bg-secondary">Expired</span>
+            <% } else if (scheduled) { %><span class="badge bg-warning text-dark">Scheduled</span>
+            <% } else { %><span class="badge bg-success">Active</span><% } %>
+          </td>
+          <td class="text-end text-nowrap">
+            <a href="/notices/<%= n._id %>" class="btn btn-sm btn-outline-secondary">View</a>
+            <a href="/admin/notices/<%= n._id %>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+            <form method="POST" action="/admin/notices/<%= n._id %>/delete" class="d-inline"
+                  onsubmit="return confirm(&#39;Delete this notice?&#39;);">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: admin/notice-form ============ %>
+<% if (pageView === "admin/notice-form") { %>
+<%
+  var v = function(field, fallback) {
+    if (old && old[field] !== undefined) return old[field];
+    if (notice && notice[field] !== undefined && notice[field] !== null) return notice[field];
+    return fallback;
+  };
+  var catVal = old && old.category !== undefined ? old.category : (notice && notice.category ? String(notice.category) : "");
+  var deptVal = v("department", "All");
+  var pubVal = old && old.publishDate !== undefined ? old.publishDate : inputDate(notice ? notice.publishDate : new Date());
+  var expVal = old && old.expiryDate !== undefined ? old.expiryDate : (notice && notice.expiryDate ? inputDate(notice.expiryDate) : "");
+  var pinned = old && Object.keys(old).length ? old.isPinned === "on" : (notice ? notice.isPinned : false);
+%>
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="mb-3"><%= notice ? "Edit Notice" : "New Notice" %></h3>
+
+        <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+        <% if (categories.length === 0) { %>
+          <div class="alert alert-warning">
+            Please create a category first. <a href="/admin/categories">Categories page</a>
+          </div>
+        <% } %>
+
+        <form method="POST" enctype="multipart/form-data"
+              action="<%= notice ? "/admin/notices/" + notice._id : "/admin/notices" %>">
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" class="form-control" value="<%= v("title", "") %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" rows="6" class="form-control" required><%= v("description", "") %></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Category</label>
+              <select name="category" class="form-select" required>
+                <option value="">-- select --</option>
+                <% categories.forEach(function(c){ %>
+                  <option value="<%= c._id %>" <%= String(c._id) === catVal ? "selected" : "" %>><%= c.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Department</label>
+              <select name="department" class="form-select">
+                <% departments.forEach(function(d){ %>
+                  <option value="<%= d %>" <%= d === deptVal ? "selected" : "" %>><%= d %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Publish date</label>
+              <input type="date" name="publishDate" class="form-control" value="<%= pubVal %>">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Expiry date (optional)</label>
+              <input type="date" name="expiryDate" class="form-control" value="<%= expVal %>">
+            </div>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="isPinned" id="isPinned" <%= pinned ? "checked" : "" %>>
+            <label class="form-check-label" for="isPinned">Pin / Urgent (shown first, with a red badge)</label>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Attachment (PDF / JPG / PNG / WEBP, max 5 MB)</label>
+            <input type="file" name="attachment" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp">
+            <% if (notice && notice.attachment && notice.attachment.filename) { %>
+              <div class="form-text">
+                Current: <a href="/uploads/<%= notice.attachment.filename %>" target="_blank"><%= notice.attachment.originalName %></a>
+                (choosing a new file will replace it)
+              </div>
+              <div class="form-check mt-1">
+                <input class="form-check-input" type="checkbox" name="removeAttachment" id="rm">
+                <label class="form-check-label" for="rm">Remove current attachment</label>
+              </div>
+            <% } %>
+          </div>
+          <button class="btn btn-primary" <%= categories.length === 0 ? "disabled" : "" %>>
+            <%= notice ? "Save changes" : "Publish notice" %>
+          </button>
+          <a href="/admin/notices" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<%# ============ PAGE: admin/categories ============ %>
+<% if (pageView === "admin/categories") { %>
+<h2 class="mb-3">Categories</h2>
+
+<form method="POST" action="/admin/categories" class="row g-2 mb-4">
+  <div class="col-sm-6 col-md-5">
+    <input type="text" name="name" class="form-control" placeholder="New category (e.g. Exams)" required>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <select name="type" class="form-select">
+      <option value="notice">Notice</option>
+      <option value="item">Lost &amp; Found item</option>
+    </select>
+  </div>
+  <div class="col-auto"><button class="btn btn-primary">Add</button></div>
+</form>
+
+<% if (categories.length === 0) { %>
+  <div class="alert alert-secondary">No categories yet. Add one above (or run <code>node seed.js</code> in the terminal).</div>
+<% } else { %>
+<div class="table-responsive">
+  <table class="table align-middle bg-white">
+    <thead class="table-light"><tr><th>Name</th><th>Type</th><th>Notices</th><th></th></tr></thead>
+    <tbody>
+      <% categories.forEach(function(c){ %>
+        <tr>
+          <td>
+            <form method="POST" action="/admin/categories/<%= c._id %>/edit" class="d-flex gap-2">
+              <input type="text" name="name" class="form-control form-control-sm" value="<%= c.name %>" required>
+              <button class="btn btn-sm btn-outline-primary">Save</button>
+            </form>
+          </td>
+          <td><span class="badge bg-secondary"><%= c.type %></span></td>
+          <td><%= used[c._id] || 0 %></td>
+          <td class="text-end">
+            <form method="POST" action="/admin/categories/<%= c._id %>/delete" class="d-inline"
+                  onsubmit="return confirm(&#39;Delete this category?&#39;);">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: admin/items ============ %>
+<% if (pageView === "admin/items") { %>
+<h2 class="mb-3">Manage Lost &amp; Found</h2>
+
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item"><a class="nav-link <%= approval === "pending" ? "active" : "" %>" href="/admin/items?approval=pending">Pending (<%= counts.pending %>)</a></li>
+  <li class="nav-item"><a class="nav-link <%= approval === "approved" ? "active" : "" %>" href="/admin/items?approval=approved">Approved (<%= counts.approved %>)</a></li>
+  <li class="nav-item"><a class="nav-link <%= approval === "rejected" ? "active" : "" %>" href="/admin/items?approval=rejected">Rejected (<%= counts.rejected %>)</a></li>
+  <li class="nav-item"><a class="nav-link <%= approval === "all" ? "active" : "" %>" href="/admin/items?approval=all">All</a></li>
+</ul>
+
+<% if (items.length === 0) { %>
+  <div class="alert alert-secondary">No items in this list.</div>
+<% } else { %>
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-white">
+    <thead class="table-light">
+      <tr><th>Title</th><th>Type</th><th>Category</th><th>Posted by</th><th>Date</th><th>Approval</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% items.forEach(function(it){ %>
+        <tr>
+          <td><a href="/items/<%= it._id %>"><%= it.title %></a></td>
+          <td><span class="badge bg-<%= it.type === "lost" ? "danger" : "success" %> text-uppercase"><%= it.type %></span></td>
+          <td><%= it.category ? it.category.name : "-" %></td>
+          <td><%= it.postedBy ? it.postedBy.name : "-" %></td>
+          <td><%= fmtDate(it.date) %></td>
+          <td><span class="badge bg-<%= it.approval === "approved" ? "success" : it.approval === "rejected" ? "danger" : "warning text-dark" %> text-capitalize"><%= it.approval %></span></td>
+          <td>
+            <form method="POST" action="/admin/items/<%= it._id %>/status">
+              <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <% statuses.forEach(function(s){ %>
+                  <option value="<%= s %>" <%= it.status === s ? "selected" : "" %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
+                <% }) %>
+              </select>
+            </form>
+          </td>
+          <td class="text-end text-nowrap">
+            <% if (it.approval !== "approved") { %>
+              <form method="POST" action="/admin/items/<%= it._id %>/approve" class="d-inline">
+                <button class="btn btn-sm btn-success">Approve</button>
+              </form>
+            <% } %>
+            <% if (it.approval !== "rejected") { %>
+              <form method="POST" action="/admin/items/<%= it._id %>/reject" class="d-inline">
+                <button class="btn btn-sm btn-outline-warning">Reject</button>
+              </form>
+            <% } %>
+            <form method="POST" action="/admin/items/<%= it._id %>/delete" class="d-inline"
+                  onsubmit="return confirm(&#39;Delete this item?&#39;);">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: admin/claims ============ %>
+<% if (pageView === "admin/claims") { %>
+<h2 class="mb-3">Claim Requests</h2>
+
+<ul class="nav nav-pills mb-3">
+  <% ["pending","approved","rejected","all"].forEach(function(s){ %>
+    <li class="nav-item">
+      <a class="nav-link text-capitalize <%= status === s ? "active" : "" %>" href="/admin/claims?status=<%= s %>"><%= s %></a>
+    </li>
+  <% }) %>
+</ul>
+
+<% if (claims.length === 0) { %>
+  <div class="alert alert-secondary">No claims in this list.</div>
+<% } else { %>
+<div class="table-responsive">
+  <table class="table align-middle bg-white">
+    <thead class="table-light"><tr><th>Item</th><th>Claimant</th><th>Proof message</th><th>Date</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      <% claims.forEach(function(c){ %>
+        <tr>
+          <td>
+            <% if (c.item) { %>
+              <a href="/items/<%= c.item._id %>"><%= c.item.title %></a>
+              <div><span class="badge bg-<%= statusClass(c.item.status) %> text-capitalize"><%= c.item.status %></span></div>
+            <% } else { %>(deleted)<% } %>
+          </td>
+          <td>
+            <%= c.claimedBy ? c.claimedBy.name : "-" %>
+            <% if (c.claimedBy) { %><div class="small text-muted"><%= c.claimedBy.email %> &middot; <%= c.claimedBy.department %></div><% } %>
+          </td>
+          <td style="max-width:320px; white-space: pre-line;"><%= c.message %></td>
+          <td><%= fmtDate(c.createdAt) %></td>
+          <td><span class="badge bg-<%= c.status === "approved" ? "success" : c.status === "rejected" ? "danger" : "warning text-dark" %> text-capitalize"><%= c.status %></span></td>
+          <td class="text-end text-nowrap">
+            <% if (c.status === "pending") { %>
+              <form method="POST" action="/admin/claims/<%= c._id %>/approve" class="d-inline"
+                    onsubmit="return confirm(&#39;Approve this claim? The item will be marked as Claimed.&#39;);">
+                <button class="btn btn-sm btn-success">Approve</button>
+              </form>
+              <form method="POST" action="/admin/claims/<%= c._id %>/reject" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger">Reject</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+<% } %>
+
+<%# ============ PAGE: admin/users ============ %>
+<% if (pageView === "admin/users") { %>
+<h2 class="mb-3">Manage Users</h2>
+
+<form method="GET" action="/admin/users" class="row g-2 mb-3" style="max-width:520px;">
+  <div class="col">
+    <input type="text" name="q" class="form-control" placeholder="Search by name or email..." value="<%= q %>">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary">Search</button>
+    <% if (q) { %><a href="/admin/users" class="btn btn-outline-secondary">Reset</a><% } %>
+  </div>
+</form>
+
+<% if (users.length === 0) { %>
+  <div class="alert alert-secondary">No users found.</div>
+<% } else { %>
+<div class="table-responsive">
+  <table class="table align-middle bg-white">
+    <thead class="table-light">
+      <tr><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>Joined</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% users.forEach(function(u){
+           var isMe = currentUser && String(u._id) === currentUser.id; %>
+        <tr>
+          <td><%= u.name %> <% if (isMe) { %><span class="badge bg-info text-dark">You</span><% } %></td>
+          <td><%= u.email %></td>
+          <td><%= u.department %></td>
+          <td><span class="badge bg-<%= u.role === "admin" ? "danger" : "secondary" %> text-capitalize"><%= u.role %></span></td>
+          <td><%= fmtDate(u.createdAt) %></td>
+          <td class="text-end text-nowrap">
+            <% if (!isMe) { %>
+              <form method="POST" action="/admin/users/<%= u._id %>/role" class="d-inline">
+                <input type="hidden" name="role" value="<%= u.role === "admin" ? "user" : "admin" %>">
+                <button class="btn btn-sm btn-outline-primary">
+                  <%= u.role === "admin" ? "Make user" : "Make admin" %>
+                </button>
+              </form>
+              <form method="POST" action="/admin/users/<%= u._id %>/delete" class="d-inline"
+                    onsubmit="return confirm(&#39;This will delete the user along with their reports and claims. Are you sure?&#39;);">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+<% } %>
+
+</main>
+<footer class="site-footer">
+  <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+    <div>
+      <span class="footer-brand">📚 UIDS</span>
+      <span class="ms-2">University Information Display System</span>
+    </div>
+    <div class="d-flex gap-3">
+      <a href="/notices">Notices</a>
+      <a href="/items">Lost &amp; Found</a>
+      <a href="/display" target="_blank">Display Mode</a>
+    </div>
+    <div>&copy; <%= new Date().getFullYear() %> Web Engineering Project</div>
+  </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Dark / light mode toggle (the choice is remembered in the browser)
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById("themeToggle");
+  if (!btn) return;
+
+  function current() {
+    return root.getAttribute("data-bs-theme") === "dark" ? "dark" : "light";
+  }
+  function paint() {
+    btn.textContent = current() === "dark" ? "☀️" : "🌙";
+    btn.title = current() === "dark" ? "Light mode" : "Dark mode";
+  }
+
+  btn.addEventListener("click", function () {
+    var next = current() === "dark" ? "light" : "dark";
+    root.setAttribute("data-bs-theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
+<% } %>
